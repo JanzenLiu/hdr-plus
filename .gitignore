@@ -1,0 +1,8 @@
+# build stuff
+build/*
+
+# IDE stuff
+.idea/*
+
+# cache
+CMakeLists.txt~
