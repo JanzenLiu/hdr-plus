@@ -11,33 +11,24 @@ params = [(4.2, 1.05), (3.8, 1.30), (3.9, 1.10), (3.8, 1.10), (5.0, 1.00), (3.8,
 #          30           31           32           33           34           35           36           37           38           
 		  (4.0, 1.45), (3.0, 1.35), (3.6, 1.30), (3.8, 1.30), (3.2, 1.30), (3.5, 1.40), (3.8, 1.40), (3.8, 1.55), (3.8, 1.55)]
 
-# indices of bursts to skip (useful while tuning params)
-
-skip = []
-
+skip = []  # indices of bursts to skip (useful while tuning params)
 commands = []
 
+# run hdrplus with images with different parameters as input
 for burst in xrange(38):
-
-	if burst in skip: continue
+	if burst in skip:
+		continue
 	
-	command = "./hdrplus"
-
 	(comp, gain) = params[burst]
-	
-	command += (" -c " + str(comp) + " -g " + str(gain))
-
-	command += " /afs/cs/academic/class/15769-f16/project/tebrooks/raws/"
-
-	command += (" /outputs/output" + str(burst) + ".png")
+	command = "./hdrplus"
+	command += (" -c " + str(comp) + " -g " + str(gain))  # compression and gain
+	command += " /afs/cs/academic/class/15769-f16/project/tebrooks/raws/"  # directory of input images
+	command += (" /outputs/output" + str(burst) + ".png")  # path of output image
 
 	for img in xrange(8): 
-
-		command += (" burst" + str(burst) + "_" + str(img) + ".CR2")
+		command += (" burst" + str(burst) + "_" + str(img) + ".CR2")  # input images
 
 	commands += [command]
 
 for command in commands:
-
 	call(command, shell=True)
-
