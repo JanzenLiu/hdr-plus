@@ -6,3 +6,14 @@ build/*
 
 # cache
 CMakeLists.txt~
+
+# executable
+tools/dcraw
+tools/dcraw_old
+
+# image
+input/*
+output/*
+
+# log
+tools/log.txt

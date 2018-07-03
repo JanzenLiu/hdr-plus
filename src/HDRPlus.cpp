@@ -27,8 +27,8 @@ class HDRPlus {
 
         // dimensions of pixel phone output images are 3036 x 4048
 
-        static const int width = 5796;
-        static const int height = 3870;
+        static const int width = 4048;  // 5796
+        static const int height = 3044;  // 3870
 
         const BlackPoint bp;
         const WhitePoint wp;
@@ -51,7 +51,7 @@ class HDRPlus {
 
             Func alignment = align(imgs);
             Func merged = merge(imgs, alignment);
-            Func finished = finish(merged, width, height, bp, wp, wb, c, g);
+            Func finished = finish (merged, width, height, bp, wp, wb, c, g);
 
             ///////////////////////////////////////////////////////////////////////////
             // realize image
@@ -69,8 +69,13 @@ class HDRPlus {
             return output_img;
         }
 
-        /*
-         * load_raws -- Loads CR2 (Canon Raw) files into a Halide Image.
+        /**
+         * Loads raw image files into Halide Images.
+         *
+         * @param dir_path      Directory of the images to read
+         * @param img_names     Names of the images to read
+         * @param imgs          Halide::Buffers to hold the read images
+         * @return              true on success, false on failure
          */
         static bool load_raws(std::string dir_path, std::vector<std::string> &img_names, Buffer<uint16_t> &imgs) {
 
@@ -117,13 +122,17 @@ class HDRPlus {
         }
 };
 
-/*
- * read_white_balance -- Reads white balance multipliers from file and returns WhiteBalance.
+
+/**
+ * Get white balance multipliers for a given raw image with the help of dcraw.
+ *
+ * @param file_path     Path of the raw image
+ * @return              WhiteBalance, i.e. r, g0, b, g1 multipliers for the given raw image
  */
 const WhiteBalance read_white_balance(std::string file_path) {
 
     Tools::Internal::PipeOpener f(("../tools/dcraw -v -i " + file_path).c_str(), "r");
-    
+
     char buf[1024];
 
     while(f.f != nullptr) {
@@ -133,6 +142,8 @@ const WhiteBalance read_white_balance(std::string file_path) {
         float r, g0, g1, b;
 
         if(sscanf(buf, "Camera multipliers: %f %f %f %f", &r, &g0, &b, &g1) == 4) {
+            if(g1 == 0) g1 = g0;
+            std::cout << "White Balance | r:" << r << ", g0:" << g0 << ", b:" << b << ", g1:" << g1 << "\n";
 
             float m = std::min(std::min(r, g0), std::min(g1, b));
 
@@ -144,7 +155,9 @@ const WhiteBalance read_white_balance(std::string file_path) {
 }
 
 int main(int argc, char* argv[]) {
-    
+    // ================
+    // Parse Parameters
+    // ================
     if (argc < 5) {
         std::cerr << "Usage: " << argv[0] << " [options] dir_path out_img raw_img1 raw_img2 [...]" << std::endl;
         return 1;
@@ -156,44 +169,47 @@ int main(int argc, char* argv[]) {
     int i = 1;
 
     while(argv[i][0] == '-') {
-
+        // read compression
         if(argv[i][1] == 'c') {
-
             c = atof(argv[++i]);
             i++;
             continue;
         }
+        // read gain
         else if(argv[i][1] == 'g') {
 
             g = atof(argv[++i]);
             i++;
             continue;
         }
+        // invalid parameter
         else {
             std::cerr << "Invalid flag '" << argv[i][1] << "'" << std::endl;
             return 1;
         }
     }
 
+    // prompt usage
     if (argc - i < 4) {
         std::cerr << "Usage: " << argv[0] << " [-c comp -g gain] dir_path out_img raw_img1 raw_img2 [...]" << std::endl;
         return 1;
     }
 
-    std::string dir_path = argv[i++];
-    std::string out_name = argv[i++];
+    std::string dir_path = argv[i++];  // read input directory
+    std::string out_name = argv[i++];  // read output path
 
     std::vector<std::string> in_names;
-
-    while (i < argc) in_names.push_back(argv[i++]);
+    while (i < argc) in_names.push_back(argv[i++]);  // read input file names
 
     Buffer<uint16_t> imgs;
 
     if(!HDRPlus::load_raws(dir_path, in_names, imgs)) return -1;
 
     const WhiteBalance wb = read_white_balance(dir_path + "/" + in_names[0]);
-    const BlackPoint bp = 2050;
-    const WhitePoint wp = 15464;
+//    const BlackPoint bp = 2050;  // 2050
+//    const WhitePoint wp = 15464;  // 15464
+    const BlackPoint bp = 63;  // 2050
+    const WhitePoint wp = 1023;  // 15464
 
     HDRPlus hdr_plus = HDRPlus(imgs, bp, wp, wb, c, g);
 
